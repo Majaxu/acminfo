@@ -1,0 +1,40 @@
+# ============================================================================
+#  acminfo — .gitignore
+#  El repo lleva SOLO codigo. Datos, base, perfiles y secretos quedan locales.
+# ============================================================================
+
+# --- entorno / dependencias ---
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# --- datos y salidas generadas (NO van al repo) ---
+output/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+data.js
+snapshots/
+
+# --- perfiles del navegador (nodriver / chrome) ---
+nodriver_profile*/
+browser_profile*/
+
+# --- secretos (contrasenas / tokens) ---
+email_config.json
+
+# --- sistema operativo / editores ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# --- visor web / GitHub Pages ---
+web_config.json
+web_publish/
+*.enc

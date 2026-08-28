@@ -1,0 +1,11 @@
+{
+  "_ayuda": "1) Copia este archivo como 'email_config.json' (mismo carpeta). 2) Completa smtp_host/puerto/usuario y sobre todo password con una CONTRASENA DE APLICACION de tu proveedor de mail (NO tu clave normal). 3) Pone activar en true. Si activar es false o el password sigue en el placeholder, el parte igual se genera como archivo y se copia a la red, pero no se manda mail.",
+  "activar": false,
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587,
+  "seguridad": "starttls",
+  "usuario": "mjuarez@juarezbeltran.com.ar",
+  "password": "PONE-ACA-TU-APP-PASSWORD",
+  "de": "mjuarez@juarezbeltran.com.ar",
+  "para": ["mjuarez@juarezbeltran.com.ar"]
+}

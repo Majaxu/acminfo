@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zonaprop Córdoba — Visor de propiedades</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --delta-good: #006300; --delta-bad: #d03b3b;
+    --chip-new: #2a78d6;
+    --mio-bg: #e6f4ea; --part-bg: #fbeaea;   /* pasteles suaves (identificar, no gritar) */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --delta-good: #0ca30c; --delta-bad: #e66767;
+      --chip-new: #3987e5;
+      --mio-bg: rgba(70,175,100,0.16); --part-bg: rgba(225,95,95,0.15);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink-1);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 18px 24px 8px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+  .wrap { padding: 0 24px 40px; max-width: 1500px; margin: 0 auto; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;
+             background: var(--surface-1); border: 1px solid var(--border);
+             border-radius: 10px; padding: 12px 14px; margin: 12px 0 16px; }
+  .filters label { display: flex; flex-direction: column; gap: 3px;
+                   font-size: 11px; color: var(--muted); }
+  .filters select, .filters input[type=number], .filters input[type=text] {
+    font: inherit; color: var(--ink-1); background: var(--page);
+    border: 1px solid var(--baseline); border-radius: 6px; padding: 5px 8px; min-width: 90px; }
+  .filters input[type=text] { min-width: 170px; }
+  .filters .chk { flex-direction: row; align-items: center; gap: 5px;
+                  font-size: 12px; color: var(--ink-2); padding-bottom: 6px; }
+  .filters button { font: inherit; border: 1px solid var(--baseline); background: var(--page);
+                    color: var(--ink-2); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  .filters button:hover { background: var(--grid); }
+
+  .maplink { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+             background: var(--surface-1); border: 1px solid var(--border);
+             border-radius: 10px; padding: 10px 14px; margin: 0 0 16px; }
+  .maplink a { color: var(--series-1); text-decoration: none; font-weight: 600; font-size: 13px; }
+  .maplink a:hover { text-decoration: underline; }
+  .maplink .nota { color: var(--muted); font-size: 12px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+           gap: 10px; margin-bottom: 16px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border);
+          border-radius: 10px; padding: 12px 14px; }
+  .tile .k { font-size: 11px; color: var(--muted); }
+  .tile .v { font-size: 22px; font-weight: 650; margin-top: 2px; }
+  .tile .s { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+
+  .panel { background: var(--surface-1); border: 1px solid var(--border);
+           border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .panel h2 { margin: 0 0 10px; font-size: 14px; }
+  .barrow { display: grid; grid-template-columns: 170px 1fr 90px; align-items: center;
+            gap: 8px; height: 24px; }
+  .barrow .lbl { font-size: 12px; color: var(--ink-2); white-space: nowrap;
+                 overflow: hidden; text-overflow: ellipsis; text-align: right; }
+  .barrow .track { position: relative; height: 14px; }
+  .barrow .bar { position: absolute; left: 0; top: 0; bottom: 0;
+                 background: var(--series-1); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .barrow .val { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .barrow:hover .bar { opacity: .85; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface-1);
+          border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--grid);
+           font-size: 13px; }
+  th { font-size: 11px; color: var(--muted); cursor: pointer; user-select: none;
+       white-space: nowrap; background: var(--surface-1); position: sticky; top: 0; }
+  th .arr { color: var(--series-1); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: color-mix(in srgb, var(--series-1) 7%, transparent); }
+  td a { color: var(--series-1); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .chip { display: inline-block; font-size: 10.5px; font-weight: 650; border-radius: 999px;
+          padding: 1px 7px; margin-left: 6px; white-space: nowrap; }
+  .chip.baja { color: var(--delta-good); border: 1px solid var(--delta-good); }
+  .chip.suba { color: var(--delta-bad); border: 1px solid var(--delta-bad); }
+  .chip.nuevo { color: var(--chip-new); border: 1px solid var(--chip-new); }
+  /* Coloreado por publicador: fondo pastel suave — verde = mi inmobiliaria,
+     rojo = particular. Solo para identificar de un vistazo, sin gritar. */
+  tr.mio td { background: var(--mio-bg); }
+  tr.particular td { background: var(--part-bg); }
+  tbody tr.mio:hover td, tbody tr.particular:hover td { filter: brightness(0.97); }
+
+  /* multi-select (dropdowns con checkboxes) */
+  .ms { display: flex; flex-direction: column; gap: 3px; position: relative; }
+  .ms-cap { font-size: 11px; color: var(--muted); }
+  .ms-btn { font: inherit; text-align: left; color: var(--ink-1); background: var(--page);
+            border: 1px solid var(--baseline); border-radius: 6px; padding: 5px 8px;
+            min-width: 120px; cursor: pointer; }
+  .ms-btn .car { float: right; color: var(--muted); margin-left: 8px; }
+  .ms-panel { position: absolute; top: 100%; left: 0; z-index: 30; margin-top: 3px;
+              background: var(--surface-1); border: 1px solid var(--baseline);
+              border-radius: 8px; padding: 8px; min-width: 190px; max-width: 300px;
+              max-height: 280px; overflow: auto; display: none;
+              box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+  .ms.open .ms-panel { display: block; }
+  .ms-search { width: 100%; margin-bottom: 6px; padding: 4px 6px; font: inherit;
+               border: 1px solid var(--baseline); border-radius: 6px;
+               background: var(--page); color: var(--ink-1); }
+  /* selector más específico que '.filters label' para forzar checkbox AL LADO del texto */
+  .ms-panel label.ms-opt { display: flex; flex-direction: row; align-items: center;
+            gap: 6px; padding: 3px 2px; font-size: 12px; color: var(--ink-1);
+            cursor: pointer; white-space: nowrap; }
+  .ms-panel label.ms-opt input { margin: 0; flex: none; }
+  .foot { display: flex; justify-content: space-between; align-items: center;
+          margin-top: 10px; color: var(--muted); font-size: 12px; }
+  .foot button { font: inherit; border: 1px solid var(--baseline); background: var(--surface-1);
+                 color: var(--ink-2); border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Zonaprop Córdoba Capital</h1>
+  <div class="sub" id="subtitle">Cargando datos…</div>
+</header>
+<div class="wrap">
+  <div class="filters" id="filters">
+    <div class="ms" data-k="operacion"><span class="ms-cap">Operación</span>
+      <button type="button" class="ms-btn">Todas<span class="car">▾</span></button>
+      <div class="ms-panel"><div class="ms-opts"></div></div></div>
+    <div class="ms" data-k="tipo"><span class="ms-cap">Tipo</span>
+      <button type="button" class="ms-btn">Todos<span class="car">▾</span></button>
+      <div class="ms-panel"><div class="ms-opts"></div></div></div>
+    <div class="ms" data-k="barrio"><span class="ms-cap">Barrio</span>
+      <button type="button" class="ms-btn">Todos<span class="car">▾</span></button>
+      <div class="ms-panel"><div class="ms-opts"></div></div></div>
+    <div class="ms" data-k="moneda"><span class="ms-cap">Moneda</span>
+      <button type="button" class="ms-btn">Todas<span class="car">▾</span></button>
+      <div class="ms-panel"><div class="ms-opts"></div></div></div>
+    <label>Precio mín.<input type="number" id="f-pmin" min="0" step="1000"></label>
+    <label>Precio máx.<input type="number" id="f-pmax" min="0" step="1000"></label>
+    <label>m² mín.<input type="number" id="f-m2min" min="0"></label>
+    <label>m² máx.<input type="number" id="f-m2max" min="0"></label>
+    <label>Amb. mín.
+      <select id="f-amb"><option value="">-</option><option>1</option><option>2</option>
+        <option>3</option><option>4</option><option>5</option></select></label>
+    <label>Dorm. mín.
+      <select id="f-dorm"><option value="">-</option><option>1</option><option>2</option>
+        <option>3</option><option>4</option></select></label>
+    <div class="ms" data-k="publicador"><span class="ms-cap">Publicado por</span>
+      <button type="button" class="ms-btn">Todos<span class="car">▾</span></button>
+      <div class="ms-panel"><div class="ms-opts"></div></div></div>
+    <label>Buscar
+      <input type="text" id="f-q" placeholder="dirección, descripción…"></label>
+    <label class="chk"><input type="checkbox" id="f-conprecio"> Solo con precio</label>
+    <label class="chk"><input type="checkbox" id="f-bajas"> Bajaron de precio</label>
+    <label class="chk"><input type="checkbox" id="f-nuevos"> Nuevos (7 días)</label>
+    <label class="chk"><input type="checkbox" id="f-mia"> Solo mi inmobiliaria</label>
+    <label class="chk"><input type="checkbox" id="f-part"> Solo particulares</label>
+    <button id="f-reset">Limpiar</button>
+    <button id="f-csv">Exportar CSV</button>
+  </div>
+
+  <div class="maplink">
+    <a id="zp-link" href="https://www.zonaprop.com.ar/" target="_blank" rel="noopener">📍 Ver esta búsqueda en Zonaprop</a>
+    <span class="nota" id="zp-note"></span>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="panel" id="chart-panel">
+    <h2 id="chart-title">USD/m² mediana por barrio</h2>
+    <div id="chart"></div>
+  </div>
+
+  <table id="tabla">
+    <thead><tr id="thead-row"></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="foot">
+    <span id="foot-info"></span>
+    <button id="btn-mas" style="display:none">Mostrar 200 más</button>
+  </div>
+</div>
+
+<script>
+// Cargador tolerante: busca data.js al lado del visor y, si no está, en output\.
+// Así el visor funciona lo abras desde donde lo abras (carpeta de red, output\,
+// o la raíz del proyecto). Con anti-caché para no quedarse con un data.js viejo.
+(function () {
+  var rutas = ["data.js", "output/data.js", "../output/data.js"];
+  var i = 0;
+  function siguiente() {
+    if (i >= rutas.length) { arrancar(); return; }  // ninguna anduvo: mostrar aviso
+    var s = document.createElement("script");
+    s.src = rutas[i++];
+    s.onload = function () { arrancar(); };
+    s.onerror = function () { siguiente(); };
+    document.head.appendChild(s);
+  }
+  siguiente();
+})();
+
+function arrancar() {
+  "use strict";
+  if (window.__ZP_ARRANCADO__) { return; }  // no arrancar dos veces
+  window.__ZP_ARRANCADO__ = true;
+  var D = window.ZONAPROP_DATA;
+  if (!D || !D.avisos) {
+    document.getElementById("subtitle").textContent =
+      "No se encontró data.js — corré el scraper primero.";
+    return;
+  }
+  var avisos = D.avisos;
+  var HOY = D.actualizado || "";
+  var fmt = new Intl.NumberFormat("es-AR");
+  var mostrar = 200;
+  var sortCol = "precio", sortAsc = true;
+
+  // ---- utilidades ----------------------------------------------------------
+  function diasEntre(a, b) {
+    return Math.round((new Date(b) - new Date(a)) / 864e5);
+  }
+  avisos.forEach(function (a) {
+    a.dias = a.primera_vez ? diasEntre(a.primera_vez, HOY) : null;
+    a.usd_m2 = (a.moneda === "USD" && a.precio && a.m2_total)
+      ? Math.round(a.precio / a.m2_total) : null;
+    a.delta = (a.precio_anterior && a.precio)
+      ? 100 * (a.precio - a.precio_anterior) / a.precio_anterior : null;
+  });
+
+  function mediana(xs) {
+    if (!xs.length) return null;
+    var s = xs.slice().sort(function (x, y) { return x - y; });
+    var m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2);
+  }
+  function promedio(xs) {
+    if (!xs.length) return null;
+    return Math.round(xs.reduce(function (p, c) { return p + c; }, 0) / xs.length);
+  }
+
+  // ---- filtros -------------------------------------------------------------
+  var $ = function (id) { return document.getElementById(id); };
+  var opers = {venta: "Venta", alquiler: "Alquiler", alquiler_temporal: "Alquiler temporal"};
+  // ¿el dataset ya trae publicadores? (los data.js viejos no) -> si no, no colorear.
+  var HAY_PUB = avisos.some(function (a) { return a.publicador; });
+  var setOper = {}, setTipo = {}, setBarrio = {}, setPub = {};
+  avisos.forEach(function (a) {
+    if (a.operacion) setOper[a.operacion] = 1;
+    if (a.tipo) setTipo[a.tipo] = 1;
+    if (a.barrio) setBarrio[a.barrio] = 1;
+    if (a.publicador) setPub[a.publicador] = 1;
+  });
+
+  // ---- multi-select: dropdowns con checkboxes (selección múltiple) ----------
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+  var MS = [
+    {k: "operacion", vals: Object.keys(setOper).sort(), disp: function (v) { return opers[v] || v; }},
+    {k: "tipo", vals: Object.keys(setTipo).sort()},
+    {k: "barrio", vals: Object.keys(setBarrio).sort(), buscar: true},
+    {k: "moneda", vals: ["USD", "ARS"]},
+    {k: "publicador", vals: Object.keys(setPub).sort(), buscar: true}
+  ];
+  var sel = {};   // sel[key] = { valor: true, ... }
+  MS.forEach(function (m) {
+    sel[m.k] = {};
+    var box = document.querySelector('.ms[data-k="' + m.k + '"]');
+    var panel = box.querySelector(".ms-panel");
+    var opts = box.querySelector(".ms-opts");
+    var btn = box.querySelector(".ms-btn");
+    var todos = btn.firstChild.nodeValue;   // "Todas" / "Todos"
+    if (m.buscar) {
+      var s = document.createElement("input");
+      s.className = "ms-search"; s.type = "text"; s.placeholder = "buscar…";
+      panel.insertBefore(s, opts);
+      s.addEventListener("input", function () {
+        var q = s.value.toLowerCase();
+        opts.querySelectorAll(".ms-opt").forEach(function (o) {
+          o.style.display = o.getAttribute("data-v").toLowerCase().indexOf(q) < 0 ? "none" : "";
+        });
+      });
+    }
+    m.vals.forEach(function (v) {
+      var lab = document.createElement("label");
+      lab.className = "ms-opt"; lab.setAttribute("data-v", v);
+      lab.innerHTML = '<input type="checkbox" value="' + esc(v) + '"> ' + esc(m.disp ? m.disp(v) : v);
+      opts.appendChild(lab);
+    });
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var abierto = box.classList.contains("open");
+      cerrarMS();
+      if (!abierto) box.classList.add("open");
+    });
+    panel.addEventListener("click", function (e) { e.stopPropagation(); });
+    opts.addEventListener("change", function (e) {
+      var cb = e.target;
+      if (!cb || cb.type !== "checkbox") return;
+      if (cb.checked) sel[m.k][cb.value] = true; else delete sel[m.k][cb.value];
+      var n = Object.keys(sel[m.k]).length;
+      btn.firstChild.nodeValue = n ? ("(" + n + ")") : todos;
+      mostrar = 200; render();
+    });
+    box._reset = function () {
+      sel[m.k] = {};
+      opts.querySelectorAll("input[type=checkbox]").forEach(function (c) { c.checked = false; });
+      opts.querySelectorAll(".ms-opt").forEach(function (o) { o.style.display = ""; });
+      var sr = panel.querySelector(".ms-search"); if (sr) sr.value = "";
+      btn.firstChild.nodeValue = todos;
+    };
+  });
+  function cerrarMS() {
+    document.querySelectorAll(".ms.open").forEach(function (b) { b.classList.remove("open"); });
+  }
+  document.addEventListener("click", cerrarMS);
+
+  function filtrar() {
+    var pmin = +$("f-pmin").value || null, pmax = +$("f-pmax").value || null,
+        m2min = +$("f-m2min").value || null, m2max = +$("f-m2max").value || null,
+        amb = +$("f-amb").value || null, dorm = +$("f-dorm").value || null,
+        q = $("f-q").value.toLowerCase().trim(),
+        conPrecio = $("f-conprecio").checked,
+        soloBajas = $("f-bajas").checked,
+        soloNuevos = $("f-nuevos").checked,
+        soloMia = $("f-mia").checked,
+        soloPart = $("f-part").checked;
+    var aOper = Object.keys(sel.operacion).length > 0,
+        aTipo = Object.keys(sel.tipo).length > 0,
+        aBarr = Object.keys(sel.barrio).length > 0,
+        aMon = Object.keys(sel.moneda).length > 0,
+        aPub = Object.keys(sel.publicador).length > 0;
+    return avisos.filter(function (a) {
+      if (aOper && !sel.operacion[a.operacion]) return false;
+      if (aTipo && !sel.tipo[a.tipo]) return false;
+      if (aBarr && !sel.barrio[a.barrio]) return false;
+      if (aMon && !sel.moneda[a.moneda]) return false;
+      if (aPub && !sel.publicador[a.publicador]) return false;
+      if (conPrecio && !a.precio) return false;
+      if (pmin && (!a.precio || a.precio < pmin)) return false;
+      if (pmax && (!a.precio || a.precio > pmax)) return false;
+      if (m2min && (!a.m2_total || a.m2_total < m2min)) return false;
+      if (m2max && (!a.m2_total || a.m2_total > m2max)) return false;
+      if (amb && (!a.ambientes || a.ambientes < amb)) return false;
+      if (dorm && (!a.dormitorios || a.dormitorios < dorm)) return false;
+      if (soloBajas && !(a.delta !== null && a.delta < 0)) return false;
+      if (soloNuevos && !(a.dias !== null && a.dias <= 7)) return false;
+      if (soloMia && !a.es_mia) return false;
+      if (soloPart && a.publicador) return false;
+      if (q) {
+        var txt = ((a.direccion || "") + " " + (a.descripcion || "") + " " +
+                   (a.barrio || "")).toLowerCase();
+        if (txt.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  // ---- stat tiles ----------------------------------------------------------
+  function tile(k, v, s) {
+    return '<div class="tile"><div class="k">' + k + '</div><div class="v">' +
+           v + '</div><div class="s">' + (s || "") + "</div></div>";
+  }
+  function renderTiles(rows) {
+    var usd = rows.filter(function (a) { return a.moneda === "USD" && a.precio; })
+                  .map(function (a) { return a.precio; });
+    var ars = rows.filter(function (a) { return a.moneda === "ARS" && a.precio; })
+                  .map(function (a) { return a.precio; });
+    var um2 = rows.map(function (a) { return a.usd_m2; }).filter(Boolean);
+    var bajas = rows.filter(function (a) { return a.delta !== null && a.delta < 0; }).length;
+    var html = tile("Avisos", fmt.format(rows.length),
+                    fmt.format(bajas) + " bajaron de precio");
+    if (usd.length) html += tile("Mediana USD", "USD " + fmt.format(mediana(usd)),
+                                 "promedio USD " + fmt.format(promedio(usd)) +
+                                 " · " + fmt.format(usd.length) + " avisos");
+    if (um2.length) html += tile("USD/m² mediana", fmt.format(mediana(um2)),
+                                 "promedio " + fmt.format(promedio(um2)));
+    if (ars.length) html += tile("Mediana $ (pesos)", "$ " + fmt.format(mediana(ars)),
+                                 "promedio $ " + fmt.format(promedio(ars)) +
+                                 " · " + fmt.format(ars.length) + " avisos");
+    $("tiles").innerHTML = html;
+  }
+
+  // ---- gráfico de barras: USD/m² mediana por barrio ------------------------
+  function renderChart(rows) {
+    var porBarrio = {};
+    rows.forEach(function (a) {
+      if (a.usd_m2 && a.barrio) (porBarrio[a.barrio] = porBarrio[a.barrio] || []).push(a.usd_m2);
+    });
+    var items = Object.keys(porBarrio)
+      .map(function (b) { return {barrio: b, n: porBarrio[b].length,
+                                  med: mediana(porBarrio[b])}; })
+      .filter(function (x) { return x.n >= 5; })
+      .sort(function (x, y) { return y.n - x.n; })
+      .slice(0, 12)
+      .sort(function (x, y) { return y.med - x.med; });
+    if (!items.length) {
+      $("chart-panel").style.display = "none";
+      return;
+    }
+    $("chart-panel").style.display = "";
+    var max = items[0].med;
+    $("chart").innerHTML = items.map(function (x) {
+      return '<div class="barrow" title="' + x.barrio + ": USD/m² mediana " +
+        fmt.format(x.med) + " sobre " + x.n + ' avisos">' +
+        '<div class="lbl">' + x.barrio + "</div>" +
+        '<div class="track"><div class="bar" style="width:' +
+        (100 * x.med / max).toFixed(1) + '%"></div></div>' +
+        '<div class="val">' + fmt.format(x.med) + " · " + x.n + "</div></div>";
+    }).join("");
+  }
+
+  // ---- tabla ---------------------------------------------------------------
+  var cols = [
+    {k: "tipo", t: "Tipo"}, {k: "barrio", t: "Barrio"},
+    {k: "direccion", t: "Dirección"},
+    {k: "publicador", t: "Publicado por"},
+    {k: "precio", t: "Precio", num: 1}, {k: "usd_m2", t: "USD/m²", num: 1},
+    {k: "m2_total", t: "m² terr.", num: 1}, {k: "m2_cubierto", t: "m² cub.", num: 1},
+    {k: "dormitorios", t: "Dorm", num: 1}, {k: "dias", t: "Días track", num: 1},
+    {k: "dias_publicado", t: "Días publ.", num: 1},
+    {k: "fecha_publicacion", t: "F. publicación"}
+  ];
+  $("thead-row").innerHTML = cols.map(function (c) {
+    return "<th" + (c.num ? ' class="num"' : "") + ' data-k="' + c.k + '">' +
+           c.t + ' <span class="arr"></span></th>';
+  }).join("");
+  $("thead-row").addEventListener("click", function (e) {
+    var th = e.target.closest("th");
+    if (!th) return;
+    var k = th.getAttribute("data-k");
+    if (sortCol === k) sortAsc = !sortAsc; else { sortCol = k; sortAsc = true; }
+    render();
+  });
+
+  function renderTabla(rows) {
+    var arr = rows.slice().sort(function (a, b) {
+      var x = a[sortCol], y = b[sortCol];
+      if (x == null) return 1;
+      if (y == null) return -1;
+      if (typeof x === "string") return sortAsc ? x.localeCompare(y) : y.localeCompare(x);
+      return sortAsc ? x - y : y - x;
+    });
+    document.querySelectorAll("#thead-row .arr").forEach(function (s) { s.textContent = ""; });
+    var th = document.querySelector('#thead-row th[data-k="' + sortCol + '"] .arr');
+    if (th) th.textContent = sortAsc ? "↑" : "↓";
+
+    var vis = arr.slice(0, mostrar);
+    $("tbody").innerHTML = vis.map(function (a) {
+      var precio = a.precio
+        ? (a.moneda === "USD" ? "USD " : "$ ") + fmt.format(a.precio)
+        : "Consultar";
+      var chips = "";
+      if (a.delta !== null && a.delta < -0.5)
+        chips += '<span class="chip baja">↓ ' + Math.abs(a.delta).toFixed(1) + "%</span>";
+      if (a.delta !== null && a.delta > 0.5)
+        chips += '<span class="chip suba">↑ ' + a.delta.toFixed(1) + "%</span>";
+      if (a.dias !== null && a.dias <= 7) chips += '<span class="chip nuevo">Nuevo</span>';
+      var url = a.url && a.url.charAt(0) === "/" ? "https://www.zonaprop.com.ar" + a.url : a.url;
+      var cls = a.es_mia ? "mio" : (HAY_PUB && !a.publicador ? "particular" : "");
+      return "<tr" + (cls ? ' class="' + cls + '"' : "") + "><td>" + (a.tipo || "–") +
+        "</td><td>" + (a.barrio || "–") +
+        '</td><td><a href="' + url + '" target="_blank" rel="noopener">' +
+        (a.direccion || a.descripcion || "ver aviso") + "</a></td>" +
+        "<td>" + (a.publicador || (HAY_PUB ? "Particular" : "–")) + "</td>" +
+        '<td class="num">' + precio + chips + "</td>" +
+        '<td class="num">' + (a.usd_m2 ? fmt.format(a.usd_m2) : "–") + "</td>" +
+        '<td class="num">' + (a.m2_total ? fmt.format(a.m2_total) : "–") + "</td>" +
+        '<td class="num">' + (a.m2_cubierto ? fmt.format(a.m2_cubierto) : "–") + "</td>" +
+        '<td class="num">' + (a.dormitorios || "–") + "</td>" +
+        '<td class="num">' + (a.dias != null ? a.dias : "–") + "</td>" +
+        '<td class="num">' + (a.dias_publicado != null ? a.dias_publicado : "–") + "</td>" +
+        "<td>" + (a.fecha_publicacion || "–") + "</td></tr>";
+    }).join("") || '<tr><td colspan="12" class="empty">Sin resultados con estos filtros</td></tr>';
+
+    $("foot-info").textContent = "Mostrando " + fmt.format(Math.min(mostrar, arr.length)) +
+      " de " + fmt.format(arr.length) + " avisos";
+    $("btn-mas").style.display = arr.length > mostrar ? "" : "none";
+  }
+
+  // ---- export CSV ----------------------------------------------------------
+  function exportCsv(rows) {
+    var head = ["id", "operacion", "tipo", "barrio", "ciudad", "direccion", "publicador",
+                "moneda", "precio", "precio_anterior", "expensas", "usd_m2", "m2_total",
+                "m2_cubierto", "ambientes", "dormitorios", "banos", "cocheras",
+                "fecha_publicacion", "dias_track", "dias_publicado", "primera_vez", "url"];
+    var lineas = [head.join(";")];
+    rows.forEach(function (a) {
+      lineas.push([a.id, a.operacion, a.tipo, a.barrio, a.ciudad, a.direccion, a.publicador,
+        a.moneda, a.precio, a.precio_anterior, a.expensas, a.usd_m2, a.m2_total,
+        a.m2_cubierto, a.ambientes, a.dormitorios, a.banos, a.cocheras,
+        a.fecha_publicacion, a.dias, a.dias_publicado, a.primera_vez, a.url
+      ].map(function (v) {
+        v = v == null ? "" : String(v);
+        return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      }).join(";"));
+    });
+    var blob = new Blob(["﻿" + lineas.join("\r\n")], {type: "text/csv;charset=utf-8"});
+    var aEl = document.createElement("a");
+    aEl.href = URL.createObjectURL(blob);
+    aEl.download = "zonaprop_" + HOY + ".csv";
+    aEl.click();
+  }
+
+  // ---- orquestación --------------------------------------------------------
+  // ---- link a Zonaprop con los filtros aplicados --------------------------
+  // Zonaprop mete los filtros en el slug de la URL. El "Ver mapa" es un toggle
+  // JS sin URL propia, así que el link abre la búsqueda filtrada (lista) y desde
+  // ahí "Ver mapa" queda a un clic (Zonaprop recuerda la vista por sesión).
+  var TIPO_SLUG = {
+    "Departamento": "departamentos", "Casa": "casas", "PH": "ph",
+    "Terreno": "terrenos", "Local comercial": "locales-comerciales",
+    "Oficina": "oficinas-comerciales", "Cochera": "cocheras"
+  };
+  var OP_SLUG = {venta: "venta", alquiler: "alquiler", alquiler_temporal: "alquiler-temporal"};
+  function unicoSel(k) { var ks = Object.keys(sel[k]); return ks.length === 1 ? ks[0] : null; }
+  function slugBarrio(b) {
+    var s = b.replace(/\s*c[oó]rdoba\s*$/i, "").trim().toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return s;   // vacío si el barrio era solo "Córdoba"
+  }
+  function actualizarLinkZP() {
+    var op = unicoSel("operacion"), tp = unicoSel("tipo"), br = unicoSel("barrio"),
+        mon = unicoSel("moneda");
+    var opSlug = op ? OP_SLUG[op] : "venta";
+    var tpSlug = (tp && TIPO_SLUG[tp]) ? TIPO_SLUG[tp] : "inmuebles";
+    var brSlug = br ? slugBarrio(br) : "";
+    var ubic = brSlug ? (brSlug + "-cordoba") : "cordoba-cb";
+    var slug = tpSlug + "-" + opSlug + "-" + ubic;
+    // Formato de precio de Zonaprop: rango = "{min}-{max}-dolares" (el combinado
+    // mas-X-menos-Y NO aplica el tope superior). Un solo límite: mas-X / menos-X.
+    var curP = mon === "ARS" ? "pesos" : "dolares";
+    var curS = mon === "ARS" ? "pesos" : "dolar";
+    var pmin = +$("f-pmin").value || 0, pmax = +$("f-pmax").value || 0;
+    if (pmin && pmax) slug += "-" + pmin + "-" + pmax + "-" + curP;
+    else if (pmin) slug += "-mas-" + pmin + "-" + curS;
+    else if (pmax) slug += "-menos-" + pmax + "-" + curS;
+    $("zp-link").href = "https://www.zonaprop.com.ar/" + slug + ".html";
+    var partes = [op ? (opers[op] || op) : "venta (por defecto)",
+                  tp || "todos los tipos", br || "toda Córdoba"];
+    if (pmin || pmax) partes.push((pmin ? fmt.format(pmin) : "0") + "–" +
+                                  (pmax ? fmt.format(pmax) : "∞") + " " + cur);
+    $("zp-note").textContent = "→ " + partes.join(" · ");
+  }
+
+  var actuales = [];
+  function render() {
+    actuales = filtrar();
+    actualizarLinkZP();
+    renderTiles(actuales);
+    renderChart(actuales);
+    renderTabla(actuales);
+  }
+  $("filters").addEventListener("input", function (e) {
+    // el multi-select maneja su propio render; ignorar sus inputs internos
+    if (e.target.closest && e.target.closest(".ms")) return;
+    if (e.target.id !== "f-reset" && e.target.id !== "f-csv") { mostrar = 200; render(); }
+  });
+  $("f-reset").addEventListener("click", function () {
+    document.querySelectorAll(".filters select, .filters input[type=number], #f-q")
+      .forEach(function (el) { el.value = ""; });
+    document.querySelectorAll(".filters input[type=checkbox]")
+      .forEach(function (el) { el.checked = false; });
+    document.querySelectorAll(".ms").forEach(function (b) { if (b._reset) b._reset(); });
+    cerrarMS();
+    mostrar = 200; render();
+  });
+  $("f-csv").addEventListener("click", function () { exportCsv(actuales); });
+  $("btn-mas").addEventListener("click", function () { mostrar += 200; renderTabla(actuales); });
+
+  var corr = D.corridas && D.corridas.length ? D.corridas[D.corridas.length - 1] : null;
+  $("subtitle").textContent = "Actualizado: " + HOY +
+    " · " + fmt.format(avisos.length) + " avisos activos" +
+    (corr ? " · " + fmt.format(corr.nuevos) + " nuevos, " +
+      fmt.format(corr.cambios_precio) + " cambios de precio, " +
+      fmt.format(corr.retirados) + " retirados en la última corrida" : "");
+  render();
+}
+</script>
+</body>
+</html>

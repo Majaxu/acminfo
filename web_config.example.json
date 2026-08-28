@@ -1,0 +1,7 @@
+{
+  "_ayuda": "Copia este archivo como web_config.json y completa 'clave' con una contrasena LARGA (12+ caracteres). Es la que vas a tipear en el visor online para descifrar. web_config.json esta en .gitignore: nunca se sube. 'repo_dir' vacio = publica desde esta misma carpeta; si usas un repo web aparte, poné su ruta local. 'pages_url' es solo informativo (lo imprime al terminar).",
+  "clave": "PONE-ACA-UNA-CLAVE-LARGA",
+  "rama": "gh-pages",
+  "repo_dir": "",
+  "pages_url": "https://TU-USUARIO.github.io/acminfo/"
+}
