@@ -438,6 +438,7 @@ function arrancar() {
     {k: "direccion", t: "Dirección"},
     {k: "publicador", t: "Publicado por"},
     {k: "precio", t: "Precio", num: 1}, {k: "usd_m2", t: "USD/m²", num: 1},
+    {k: "vistas", t: "Vistas", num: 1}, {k: "vistas_tend", t: "Tend./d", num: 1},
     {k: "m2_total", t: "m² terr.", num: 1}, {k: "m2_cubierto", t: "m² cub.", num: 1},
     {k: "dormitorios", t: "Dorm", num: 1}, {k: "dias", t: "Días track", num: 1},
     {k: "dias_publicado", t: "Días publ.", num: 1},
@@ -478,6 +479,10 @@ function arrancar() {
       if (a.delta !== null && a.delta > 0.5)
         chips += '<span class="chip suba">↑ ' + a.delta.toFixed(1) + "%</span>";
       if (a.dias !== null && a.dias <= 7) chips += '<span class="chip nuevo">Nuevo</span>';
+      var tend = "–";
+      if (a.vistas_tend != null && a.vistas_tend > 0) tend = '<span style="color:#1a7f37">+' + a.vistas_tend + '</span>';
+      else if (a.vistas_tend != null && a.vistas_tend < 0) tend = '<span style="color:#b91c1c">' + a.vistas_tend + '</span>';
+      else if (a.vistas_tend === 0) tend = "0";
       var url = a.url && a.url.charAt(0) === "/" ? "https://www.zonaprop.com.ar" + a.url : a.url;
       var cls = a.es_mia ? "mio" : (HAY_PUB && !a.publicador ? "particular" : "");
       return "<tr" + (cls ? ' class="' + cls + '"' : "") + "><td>" + (a.tipo || "–") +
@@ -487,13 +492,15 @@ function arrancar() {
         "<td>" + (a.publicador || (HAY_PUB ? "Particular" : "–")) + "</td>" +
         '<td class="num">' + precio + chips + "</td>" +
         '<td class="num">' + (a.usd_m2 ? fmt.format(a.usd_m2) : "–") + "</td>" +
+        '<td class="num">' + (a.vistas != null ? fmt.format(a.vistas) : "–") + "</td>" +
+        '<td class="num">' + tend + "</td>" +
         '<td class="num">' + (a.m2_total ? fmt.format(a.m2_total) : "–") + "</td>" +
         '<td class="num">' + (a.m2_cubierto ? fmt.format(a.m2_cubierto) : "–") + "</td>" +
         '<td class="num">' + (a.dormitorios || "–") + "</td>" +
         '<td class="num">' + (a.dias != null ? a.dias : "–") + "</td>" +
         '<td class="num">' + (a.dias_publicado != null ? a.dias_publicado : "–") + "</td>" +
         "<td>" + (a.fecha_publicacion || "–") + "</td></tr>";
-    }).join("") || '<tr><td colspan="12" class="empty">Sin resultados con estos filtros</td></tr>';
+    }).join("") || '<tr><td colspan="14" class="empty">Sin resultados con estos filtros</td></tr>';
 
     $("foot-info").textContent = "Mostrando " + fmt.format(Math.min(mostrar, arr.length)) +
       " de " + fmt.format(arr.length) + " avisos";
@@ -503,13 +510,13 @@ function arrancar() {
   // ---- export CSV ----------------------------------------------------------
   function exportCsv(rows) {
     var head = ["id", "operacion", "tipo", "barrio", "ciudad", "direccion", "publicador",
-                "moneda", "precio", "precio_anterior", "expensas", "usd_m2", "m2_total",
+                "moneda", "precio", "precio_anterior", "expensas", "usd_m2", "vistas", "vistas_tend", "m2_total",
                 "m2_cubierto", "ambientes", "dormitorios", "banos", "cocheras",
                 "fecha_publicacion", "dias_track", "dias_publicado", "primera_vez", "url"];
     var lineas = [head.join(";")];
     rows.forEach(function (a) {
       lineas.push([a.id, a.operacion, a.tipo, a.barrio, a.ciudad, a.direccion, a.publicador,
-        a.moneda, a.precio, a.precio_anterior, a.expensas, a.usd_m2, a.m2_total,
+        a.moneda, a.precio, a.precio_anterior, a.expensas, a.usd_m2, a.vistas, a.vistas_tend, a.m2_total,
         a.m2_cubierto, a.ambientes, a.dormitorios, a.banos, a.cocheras,
         a.fecha_publicacion, a.dias, a.dias_publicado, a.primera_vez, a.url
       ].map(function (v) {
