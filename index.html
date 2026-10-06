@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zonaprop Córdoba — Visor de propiedades</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA2NCA2NCc+PHJlY3Qgd2lkdGg9JzY0JyBoZWlnaHQ9JzY0JyByeD0nMTMnIGZpbGw9JyMxYTNhNmInLz48dGV4dCB4PSczMicgeT0nNDUnIGZvbnQtZmFtaWx5PSdBcmlhbCxIZWx2ZXRpY2Esc2Fucy1zZXJpZicgZm9udC1zaXplPSczMScgZm9udC13ZWlnaHQ9J2JvbGQnIGZpbGw9JyNmZmZmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnPkpCPC90ZXh0Pjwvc3ZnPg==">
 <style>
   :root {
     color-scheme: light;
@@ -245,6 +246,7 @@ function arrancar() {
     return Math.round((new Date(b) - new Date(a)) / 864e5);
   }
   avisos.forEach(function (a) {
+    if (a.precio != null && a.precio <= 1) a.precio = null;  // precio basura (sin precio real) -> Consultar
     a.dias = a.primera_vez ? diasEntre(a.primera_vez, HOY) : null;
     a.usd_m2 = (a.moneda === "USD" && a.precio && a.m2_total)
       ? Math.round(a.precio / a.m2_total) : null;
@@ -576,7 +578,7 @@ function arrancar() {
     var partes = [op ? (opers[op] || op) : "venta (por defecto)",
                   tp || "todos los tipos", br || "toda Córdoba"];
     if (pmin || pmax) partes.push((pmin ? fmt.format(pmin) : "0") + "–" +
-                                  (pmax ? fmt.format(pmax) : "∞") + " " + cur);
+                                  (pmax ? fmt.format(pmax) : "∞") + " " + (mon || "USD"));
     $("zp-note").textContent = "→ " + partes.join(" · ");
   }
 
