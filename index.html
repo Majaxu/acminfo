@@ -151,9 +151,6 @@
     <label>Precio máx.<input type="text" inputmode="numeric" id="f-pmax" placeholder="300.000"></label>
     <label>m² mín.<input type="text" inputmode="numeric" id="f-m2min"></label>
     <label>m² máx.<input type="text" inputmode="numeric" id="f-m2max"></label>
-    <label>Amb. mín.
-      <select id="f-amb"><option value="">-</option><option>1</option><option>2</option>
-        <option>3</option><option>4</option><option>5</option></select></label>
     <label>Dorm. mín.
       <select id="f-dorm"><option value="">-</option><option>1</option><option>2</option>
         <option>3</option><option>4</option></select></label>
@@ -348,7 +345,7 @@ function arrancar() {
         pmax = parseInt(($("f-pmax").value || "").replace(/[^\d]/g, ""), 10) || null,
         m2min = parseInt(($("f-m2min").value || "").replace(/[^\d]/g, ""), 10) || null,
         m2max = parseInt(($("f-m2max").value || "").replace(/[^\d]/g, ""), 10) || null,
-        amb = +$("f-amb").value || null, dorm = +$("f-dorm").value || null,
+        dorm = +$("f-dorm").value || null,
         dormMax = +$("f-dorm-max").value || null,
         q = $("f-q").value.toLowerCase().trim(),
         conPrecio = $("f-conprecio").checked,
@@ -372,7 +369,6 @@ function arrancar() {
       if (pmax && (!a.precio || a.precio > pmax)) return false;
       if (m2min && (!a.m2_total || a.m2_total < m2min)) return false;
       if (m2max && (!a.m2_total || a.m2_total > m2max)) return false;
-      if (amb && (!a.ambientes || a.ambientes < amb)) return false;
       if (dorm && (!a.dormitorios || a.dormitorios < dorm)) return false;
       if (dormMax && (!a.dormitorios || a.dormitorios > dormMax)) return false;
       if (soloBajas && !(a.delta !== null && a.delta < 0)) return false;
