@@ -145,10 +145,10 @@
     <div class="ms" data-k="moneda"><span class="ms-cap">Moneda</span>
       <button type="button" class="ms-btn">Todas<span class="car">▾</span></button>
       <div class="ms-panel"><div class="ms-opts"></div></div></div>
-    <label>Precio mín.<input type="number" id="f-pmin" min="0" step="1000"></label>
-    <label>Precio máx.<input type="number" id="f-pmax" min="0" step="1000"></label>
-    <label>m² mín.<input type="number" id="f-m2min" min="0"></label>
-    <label>m² máx.<input type="number" id="f-m2max" min="0"></label>
+    <label>Precio mín.<input type="text" inputmode="numeric" id="f-pmin" placeholder="150.000"></label>
+    <label>Precio máx.<input type="text" inputmode="numeric" id="f-pmax" placeholder="300.000"></label>
+    <label>m² mín.<input type="text" inputmode="numeric" id="f-m2min"></label>
+    <label>m² máx.<input type="text" inputmode="numeric" id="f-m2max"></label>
     <label>Amb. mín.
       <select id="f-amb"><option value="">-</option><option>1</option><option>2</option>
         <option>3</option><option>4</option><option>5</option></select></label>
@@ -341,8 +341,10 @@ function arrancar() {
   document.addEventListener("click", cerrarMS);
 
   function filtrar() {
-    var pmin = +$("f-pmin").value || null, pmax = +$("f-pmax").value || null,
-        m2min = +$("f-m2min").value || null, m2max = +$("f-m2max").value || null,
+    var pmin = parseInt(($("f-pmin").value || "").replace(/[^\d]/g, ""), 10) || null,
+        pmax = parseInt(($("f-pmax").value || "").replace(/[^\d]/g, ""), 10) || null,
+        m2min = parseInt(($("f-m2min").value || "").replace(/[^\d]/g, ""), 10) || null,
+        m2max = parseInt(($("f-m2max").value || "").replace(/[^\d]/g, ""), 10) || null,
         amb = +$("f-amb").value || null, dorm = +$("f-dorm").value || null,
         dormMax = +$("f-dorm-max").value || null,
         q = $("f-q").value.toLowerCase().trim(),
@@ -566,7 +568,7 @@ function arrancar() {
     // mas-X-menos-Y NO aplica el tope superior). Un solo límite: mas-X / menos-X.
     var curP = mon === "ARS" ? "pesos" : "dolares";
     var curS = mon === "ARS" ? "pesos" : "dolar";
-    var pmin = +$("f-pmin").value || 0, pmax = +$("f-pmax").value || 0;
+    var pmin = parseInt(($("f-pmin").value || "").replace(/[^\d]/g, ""), 10) || 0, pmax = parseInt(($("f-pmax").value || "").replace(/[^\d]/g, ""), 10) || 0;
     if (pmin && pmax) slug += "-" + pmin + "-" + pmax + "-" + curP;
     else if (pmin) slug += "-mas-" + pmin + "-" + curS;
     else if (pmax) slug += "-menos-" + pmax + "-" + curS;
