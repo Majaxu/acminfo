@@ -155,6 +155,9 @@
     <label>Dorm. mín.
       <select id="f-dorm"><option value="">-</option><option>1</option><option>2</option>
         <option>3</option><option>4</option></select></label>
+    <label>Dorm. máx.
+      <select id="f-dorm-max"><option value="">-</option><option>1</option><option>2</option>
+        <option>3</option><option>4</option></select></label>
     <div class="ms" data-k="publicador"><span class="ms-cap">Publicado por</span>
       <button type="button" class="ms-btn">Todos<span class="car">▾</span></button>
       <div class="ms-panel"><div class="ms-opts"></div></div></div>
@@ -341,6 +344,7 @@ function arrancar() {
     var pmin = +$("f-pmin").value || null, pmax = +$("f-pmax").value || null,
         m2min = +$("f-m2min").value || null, m2max = +$("f-m2max").value || null,
         amb = +$("f-amb").value || null, dorm = +$("f-dorm").value || null,
+        dormMax = +$("f-dorm-max").value || null,
         q = $("f-q").value.toLowerCase().trim(),
         conPrecio = $("f-conprecio").checked,
         soloBajas = $("f-bajas").checked,
@@ -365,6 +369,7 @@ function arrancar() {
       if (m2max && (!a.m2_total || a.m2_total > m2max)) return false;
       if (amb && (!a.ambientes || a.ambientes < amb)) return false;
       if (dorm && (!a.dormitorios || a.dormitorios < dorm)) return false;
+      if (dormMax && (!a.dormitorios || a.dormitorios > dormMax)) return false;
       if (soloBajas && !(a.delta !== null && a.delta < 0)) return false;
       if (soloNuevos && !(a.dias !== null && a.dias <= 7)) return false;
       if (soloMia && !a.es_mia) return false;
